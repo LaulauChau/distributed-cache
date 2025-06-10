@@ -2,6 +2,7 @@ package hash
 
 import (
 	"crypto/sha256"
+	"slices"
 	"sort"
 	"strconv"
 )
@@ -50,9 +51,7 @@ func (r *ConsistentHashRing) AddNode(node string) {
 		r.nodes[hash] = node
 		r.sortedHashes = append(r.sortedHashes, hash)
 	}
-	sort.Slice(r.sortedHashes, func(i, j int) bool {
-		return r.sortedHashes[i] < r.sortedHashes[j]
-	})
+	slices.Sort(r.sortedHashes)
 }
 
 func (r *ConsistentHashRing) RemoveNode(node string) {
@@ -95,7 +94,5 @@ func (r *ConsistentHashRing) rebuildSortedHashes() {
 	for hash := range r.nodes {
 		r.sortedHashes = append(r.sortedHashes, hash)
 	}
-	sort.Slice(r.sortedHashes, func(i, j int) bool {
-		return r.sortedHashes[i] < r.sortedHashes[j]
-	})
+	slices.Sort(r.sortedHashes)
 }
