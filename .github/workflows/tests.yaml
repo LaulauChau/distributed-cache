@@ -7,6 +7,8 @@ on:
       - "**.go"
       - "go.mod"
       - "go.sum"
+      - "compose.yaml"
+      - "configs/*.yaml"
 
   push:
     branches: ["main", "dev"]
@@ -14,6 +16,8 @@ on:
       - "**.go"
       - "go.mod"
       - "go.sum"
+      - "compose.yaml"
+      - "configs/*.yaml"
 
 concurrency:
   cancel-in-progress: true
@@ -41,21 +45,54 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Run unit tests
-        run: go test -v -race -coverprofile=coverage.out ./...
+      - name: Run unit tests (excluding integration tests)
+        run: go test -v -race -short -coverprofile=unit-coverage.out ./...
 
-      - name: Generate coverage report
-        run: go tool cover -html=coverage.out -o coverage.html
+      - name: Generate unit test coverage report
+        run: go tool cover -html=unit-coverage.out -o unit-coverage.html
 
-      - name: Upload coverage reports
+      - name: Upload unit test coverage reports
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.html
+          name: unit-coverage-report
+          path: unit-coverage.html
+
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        go-version: [1.24.3]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Run integration tests
+        run: go test -v -race -coverprofile=integration-coverage.out ./internal/infra/redis/
+
+      - name: Generate integration test coverage report
+        run: go tool cover -html=integration-coverage.out -o integration-coverage.html
+
+      - name: Upload integration test coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage-report
+          path: integration-coverage.html
 
   test-summary:
     runs-on: ubuntu-latest
-    needs: [unit-tests]
+    needs: [unit-tests, integration-tests]
     if: always()
 
     steps:
@@ -63,3 +100,4 @@ jobs:
         run: |
           echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
