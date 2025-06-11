@@ -1,0 +1,30 @@
+services:
+  redis:
+    image: redis:8-alpine
+    command: redis-server --appendonly yes
+    healthcheck:
+      interval: 5s
+      retries: 5
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 3s
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  redis-2:
+    image: redis:8-alpine
+    command: redis-server --appendonly yes
+    healthcheck:
+      interval: 5s
+      retries: 5
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 3s
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data_2:/data
+
+volumes:
+  redis_data:
+  redis_data_2:
